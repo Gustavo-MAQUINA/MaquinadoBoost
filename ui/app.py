@@ -1,6 +1,4 @@
-import platform
 import customtkinter as ctk
-from core.backup import export_snapshot, get_backup_dir, restore_snapshot
 from core.system_actions import (
     apply_tweak_state,
     detect_tweak_state,
@@ -10,12 +8,8 @@ from core.tweaks_catalog import TWEAKS_BY_SECTION
 from ui.widgets import DropdownCard, ToggleCard
 
 NAV_ITEMS = [
-    "Dashboard",
     "Tweaks",
-    "Downloads",
     "Gaming Tweaks",
-    "Updates",
-    "Context Menu",
 ]
 
 
@@ -81,21 +75,6 @@ class MaquinadoBoostApp(ctk.CTk):
             )
             btn.grid(row=idx, column=0, sticky="ew", padx=10, pady=2)
             self.nav_buttons[name] = btn
-
-        about_btn = ctk.CTkButton(
-            sidebar,
-            text="About",
-            anchor="w",
-            fg_color="transparent",
-            hover_color="#23232c",
-            text_color="#8e8e9d",
-            font=("Segoe UI", 12),
-            height=34,
-            corner_radius=8,
-            command=lambda: self.select_section("About"),
-        )
-        about_btn.grid(row=11, column=0, sticky="ew", padx=10, pady=(0, 16))
-        self.nav_buttons["About"] = about_btn
 
     def _build_main_container(self) -> None:
         self.right_panel = ctk.CTkFrame(self, fg_color="transparent")
@@ -163,20 +142,8 @@ class MaquinadoBoostApp(ctk.CTk):
         for widget in self.scroll_area.winfo_children():
             widget.destroy()
 
-        if section == "Dashboard":
-            self._render_dashboard()
-        elif section == "Gaming Tweaks":
+        if section == "Gaming Tweaks":
             self._render_gaming_tweaks()
-        elif section == "Downloads":
-            self._render_placeholder(
-                "Módulo de Downloads / Post-Install",
-                "Aqui você pode adicionar scripts de instalação silenciosa via winget para navegadores, drivers e runtimes.",
-            )
-        elif section == "About":
-            self._render_placeholder(
-                "Sobre o MaquinadoBoost",
-                f"Sistema: Windows {platform.release()} ({platform.version()})\nArquitetura: {platform.machine()}",
-            )
         else:
             items = TWEAKS_BY_SECTION.get(section, [])
             self._render_toggle_grid(items)
@@ -244,94 +211,8 @@ class MaquinadoBoostApp(ctk.CTk):
                     card.grid(row=r, column=c, sticky="ew", padx=10, pady=6)
                 inner_idx += 1
 
-            # Espaçador inferior dentro do grupo
             ctk.CTkLabel(section_box, text="", height=4).grid(row=99, column=0)
             current_row += 1
-
-    def _render_dashboard(self) -> None:
-        info_card = ctk.CTkFrame(
-            self.scroll_area,
-            fg_color="#1d1d23",
-            border_color="#2a2a33",
-            border_width=1,
-            corner_radius=10,
-        )
-        info_card.grid(row=0, column=0, columnspan=2, sticky="ew", padx=6, pady=6)
-
-        ctk.CTkLabel(
-            info_card,
-            text="Segurança e Snapshots do Sistema",
-            font=("Segoe UI", 15, "bold"),
-            text_color="#f3f3f7",
-        ).pack(anchor="w", padx=16, pady=(14, 4))
-
-        ctk.CTkLabel(
-            info_card,
-            text=f"Máquina: {platform.node()} | Processador: {platform.processor() or 'N/A'}",
-            font=("Segoe UI", 12),
-            text_color="#a2a2b2",
-        ).pack(anchor="w", padx=16, pady=(0, 12))
-
-        btn_row = ctk.CTkFrame(info_card, fg_color="transparent")
-        btn_row.pack(anchor="w", padx=16, pady=(0, 16))
-
-        ctk.CTkButton(
-            btn_row,
-            text="Exportar Snapshot (.json)",
-            fg_color="#6c5ce7",
-            hover_color="#5b4bc4",
-            command=self._export_all_snapshot,
-        ).pack(side="left", padx=(0, 10))
-
-        ctk.CTkButton(
-            btn_row,
-            text="Restaurar Último Snapshot",
-            fg_color="#282834",
-            hover_color="#353545",
-            command=self._restore_latest_snapshot,
-        ).pack(side="left", padx=(0, 10))
-
-        ctk.CTkButton(
-            btn_row,
-            text="Criar Ponto de Restauração",
-            fg_color="#282834",
-            hover_color="#353545",
-            command=lambda: execute_custom_action("create_restore_point", True, log_fn=self.log),
-        ).pack(side="left")
-
-    def _render_placeholder(self, title: str, subtitle: str) -> None:
-        box = ctk.CTkFrame(
-            self.scroll_area,
-            fg_color="#1d1d23",
-            border_color="#2a2a33",
-            border_width=1,
-            corner_radius=10,
-        )
-        box.grid(row=0, column=0, columnspan=2, sticky="ew", padx=6, pady=6)
-        ctk.CTkLabel(box, text=title, font=("Segoe UI", 15, "bold")).pack(
-            anchor="w", padx=16, pady=(14, 4)
-        )
-        ctk.CTkLabel(box, text=subtitle, font=("Segoe UI", 12), text_color="#a2a2b2").pack(
-            anchor="w", padx=16, pady=(0, 14)
-        )
-
-    def _export_all_snapshot(self) -> None:
-        all_items = []
-        for sec, val in TWEAKS_BY_SECTION.items():
-            if isinstance(val, list):
-                all_items.extend(val)
-            elif isinstance(val, dict):
-                for grp in val.values():
-                    all_items.extend(grp)
-        export_snapshot(all_items, log_fn=self.log)
-
-    def _restore_latest_snapshot(self) -> None:
-        backup_dir = get_backup_dir()
-        files = sorted(backup_dir.glob("snapshot_*.json"), reverse=True)
-        if not files:
-            self.log("[INFO] Nenhum snapshot encontrado na pasta backups/.")
-            return
-        restore_snapshot(str(files[0]), log_fn=self.log)
 
     def _on_toggle_change(self, item: dict, state: bool) -> None:
         apply_tweak_state(item, state, log_fn=self.log)
