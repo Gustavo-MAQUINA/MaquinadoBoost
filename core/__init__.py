@@ -1,0 +1,1 @@
+# Núcleo de automação e configuração do MaquinadoBoost

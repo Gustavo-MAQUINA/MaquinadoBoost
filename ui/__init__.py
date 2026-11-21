@@ -1,0 +1,1 @@
+# Componentes visuais e janela principal do MaquinadoBoost
